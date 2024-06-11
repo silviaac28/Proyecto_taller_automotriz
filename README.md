@@ -8,7 +8,6 @@ SELECT vehiculo_id, fecha, reparacion_id, descripcion, costo_total
 FROM reparaciones
 WHERE vehiculo_id = 4;
 
-
 +-------------+------------+---------------+-------------------------------------+-------------+
 | vehiculo_id | fecha      | reparacion_id | descripcion                         | costo_total |
 +-------------+------------+---------------+-------------------------------------+-------------+
@@ -444,5 +443,339 @@ LIMIT 1;
 +----------------+------------------+---------------------------+
 ~~~
 
+2. Obtener la pieza más utilizada en reparaciones durante el último mes, asumiento que el ultimo mes es mayo del 2023
 
+~~~mysql
+SELECT pi.pieza_id, pi.nombre, SUM(rp.cantidad) AS 'Cantidad utilizada'
+FROM reparaciones AS re
+INNER JOIN reparacion_piezas AS rp
+ON re.reparacion_id = rp.reparacion_id
+INNER JOIN piezas AS pi
+ON rp.pieza_id = pi.pieza_id
+WHERE re.reparacion_id IN (SELECT rep1.reparacion_id
+FROM reparaciones AS rep1 
+WHERE rep1.fecha BETWEEN '2023-05-01' AND '2023-05-31')
+GROUP BY pi.pieza_id
+ORDER BY SUM(rp.cantidad) DESC
+LIMIT 1;
+
++----------+--------+--------------------+
+| pieza_id | nombre | Cantidad utilizada |
++----------+--------+--------------------+
+|        1 | Aceite |                  2 |
++----------+--------+--------------------+
+~~~
+
+3. Obtener los proveedores que suministran las piezas más caras
+~~~mysql
+SELECT pr.nombre_proveedor AS 'Nombre proveedor'
+FROM proveedor AS pr
+INNER JOIN piezas AS pi
+ON pr.proveedor_id = pi.proveedor_id
+WHERE pi.precio = (SELECT MAX(precio) FROM piezas);
+
++------------------+
+| Nombre proveedor |
++------------------+
+| Proveedor7       |
++------------------+
+~~~
+
+ 4. Listar las reparaciones que no utilizaron piezas específicas durante el último
+año, pieza = llanta
+
+~~~mysql
+SELECT re.reparacion_id, re.fecha, re.vehiculo_id, re.descripcion
+FROM reparaciones AS re
+WHERE re.reparacion_id NOT IN (SELECT reparacion_id
+	FROM reparacion_piezas AS rp
+	INNER JOIN piezas AS p 
+	ON rp.pieza_id = p.pieza_id
+	WHERE p.nombre = 'Llanta')
+AND fecha BETWEEN '2023-05-08' AND '2024-05-08';
+
++---------------+------------+-------------+-------------------------------------------+
+| reparacion_id | fecha      | vehiculo_id | descripcion                               |
++---------------+------------+-------------+-------------------------------------------+
+|             9 | 2023-05-09 |           9 | Cambio de filtro de aire del motor        |
+|            10 | 2023-05-10 |          10 | Revisión y ajuste del sistema eléctrico   |
+|            11 | 2023-08-18 |           2 | Cambio periodico pastillas de freno       |
+|            12 | 2024-01-08 |           4 | cambio mantenimiento bujías               |
+|            13 | 2023-07-25 |           6 | Mantenimiento periodico sistema electrico |
+|            14 | 2023-12-02 |           9 | Revisión sistema eléctrico                |
+|            15 | 2023-08-18 |           7 | Revisión suspensión                       |
+|            16 | 2023-09-09 |           8 | Revisión sistema eléctrico                |
+|            17 | 2023-05-20 |           1 | Cambio de aceite                          |
++---------------+------------+-------------+-------------------------------------------+
+~~~
+
+5. Obtener las piezas que están en inventario por debajo del 70% del stock inicial
+~~~mysql
+
+SELECT nombre AS 'Nombre pieza', inv.cantidad AS 'Cantidad actual', inv.stock_inicial AS 'Stock inicial'
+FROM piezas AS pi
+INNER JOIN inventario AS inv
+ON pi.pieza_id = inv.pieza_id
+WHERE inv.pieza_id IN (SELECT in2.pieza_id
+FROM inventario AS in2
+WHERE in2.cantidad < (0.7 * in2.stock_inicial));
+
++----------------+-----------------+---------------+
+| Nombre pieza   | Cantidad actual | Stock inicial |
++----------------+-----------------+---------------+
+| Filtro de aire |              20 |            35 |
+| Bujías         |              15 |            30 |
++----------------+-----------------+---------------+
+~~~
+
+PROCEDIMIENTOS ALMACENADOS
+
+1. Crear un procedimiento almacenado para insertar una nueva reparación.
+~~~mysql
+DELIMITER $$
+DROP PROCEDURE IF EXISTS insertar_reparacion;
+CREATE PROCEDURE insertar_reparacion(
+    IN i_fecha DATE,
+    IN i_vehiculo_id INT,
+    IN i_empleado_id INT,
+    IN i_servicio_id INT,
+    IN i_costo_total DECIMAL(10, 2),
+    IN i_descripcion VARCHAR(255),
+    IN i_duracion TIME
+)
+BEGIN
+    INSERT INTO reparaciones (fecha, vehiculo_id, empleado_id, servicio_id, costo_total, descripcion, duracion)
+    VALUES (i_fecha, i_vehiculo_id, i_empleado_id, i_servicio_id, i_costo_total, i_descripcion, i_duracion);
+END $$
+DELIMITER ;
+
+CALL insertar_reparacion('2023-06-29', 8, 5, 6, 180000.00, 'Cambio periodico pastillas de freno', '01:18:00');
+~~~
+2. Crear un procedimiento almacenado para actualizar el inventario de una pieza.
+
+~~~mysql
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS actualizar_inventario;
+CREATE PROCEDURE actualizar_inventario(
+    IN a_pieza_id INT,
+    IN a_nuevacantidad INT
+)
+BEGIN
+	UPDATE inventario
+	SET cantidad = a_nuevacantidad
+	WHERE pieza_id = a_pieza_id;
+END $$
+DELIMITER ;
+
+CALL actualizar_inventario(2, 80);
+~~~
+
+3. Crear un procedimiento almacenado para eliminar una cita
+~~~mysql
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS eliminar_cita;
+CREATE PROCEDURE eliminar_cita(
+    IN p_cita_id INT
+)
+BEGIN
+	DELETE FROM cita
+	WHERE cita_id = p_cita_id;
+END $$
+DELIMITER ;
+
+CALL eliminar_cita(2);
+~~~
+
+4. Crear un procedimiento almacenado para generar una factura
+~~~mysql
+DELIMITER $$
+DROP PROCEDURE IF EXISTS generar_factura;
+CREATE PROCEDURE generar_factura(
+	IN p_fecha DATE,
+	IN p_cliente_id INT,
+	IN p_total DOUBLE
+)
+BEGIN
+	INSERT INTO facturacion (fecha, cliente_id, total)
+	VALUES (p_fecha, p_cliente_id, p_total);
+END $$
+DELIMITER ;
+
+CALL generar_factura('2024-03-15', 5, 220000);
+~~~
+
+5. Crear un procedimiento almacenado para obtener el historial de reparaciones
+de un vehículo
+~~~mysql
+DELIMITER $$
+DROP PROCEDURE IF EXISTS historial_reparaciones;
+CREATE PROCEDURE historial_reparaciones(
+	IN p_vehiculo_id INT
+)
+BEGIN
+	SELECT vehiculo_id, reparacion_id, fecha, descripcion, costo_total
+	FROM reparaciones 
+	WHERE vehiculo_id = p_vehiculo_id;
+END $$
+DELIMITER ;
+	
+CALL historial_reparaciones(4);
+
++-------------+---------------+------------+-----------------------------+-------------+
+| vehiculo_id | reparacion_id | fecha      | descripcion                 | costo_total |
++-------------+---------------+------------+-----------------------------+-------------+
+|           4 |             4 | 2023-05-04 | Revisión y ajuste de frenos |       60000 |
+|           4 |            12 | 2024-01-08 | cambio mantenimiento bujías |       85000 |
++-------------+---------------+------------+-----------------------------+-------------+
+~~~
+
+6. Crear un procedimiento almacenado para calcular el costo total de
+reparaciones de un cliente en un período
+~~~mysql
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS costo_reparaciones_por_cliente;
+CREATE PROCEDURE costo_reparaciones_por_cliente(
+	IN p_cliente_id INT,
+	IN p_fecha_inicio DATE,
+	IN p_fecha_fin DATE
+)
+BEGIN
+	SELECT cl.cliente_id, cl.nombre AS 'Nombre cliente', cl.apellido AS 'Apellido cliente', SUM(re.costo_total) AS 'Costo total reparaciones'
+	FROM reparaciones AS re
+	INNER JOIN vehiculo AS ve
+	ON re.vehiculo_id = ve.vehiculo_id
+	INNER JOIN cliente AS cl
+	ON ve.cliente_id = cl.cliente_id
+	WHERE re.fecha BETWEEN p_fecha_inicio AND p_fecha_fin
+	AND cl.cliente_id = p_cliente_id
+	GROUP BY cl.cliente_id, cl.nombre, cl.apellido;
+END $$
+DELIMITER ;
+	
+CALL costo_reparaciones_por_cliente(5, '2023-01-10','2023-11-10');
+
++------------+----------------+------------------+--------------------------+
+| cliente_id | Nombre cliente | Apellido cliente | Costo total reparaciones |
++------------+----------------+------------------+--------------------------+
+|          5 | Luis           | Rodríguez        |                    76000 |
++------------+----------------+------------------+--------------------------+
+~~~
+
+7. Crear un procedimiento almacenado para obtener la lista de vehículos que
+requieren mantenimiento basado en el kilometraje.
+~~~mysql
+DELIMITER $$
+DROP PROCEDURE IF EXISTS mantenimiento_por_kilometraje;
+CREATE PROCEDURE mantenimiento_por_kilometraje(
+	IN p_kilometraje INT
+)
+BEGIN
+	SELECT vehiculo_id, placa, cliente_id, p_kilometraje AS 'Kilometraje excedido', kilometraje AS 'Kilometraje actual'
+	FROM vehiculo
+	WHERE kilometraje > p_kilometraje;
+	
+END $$
+DELIMITER ;
+	
+CALL mantenimiento_por_kilometraje(60000);
+
++-------------+--------+------------+----------------------+--------------------+
+| vehiculo_id | placa  | cliente_id | Kilometraje excedido | Kilometraje actual |
++-------------+--------+------------+----------------------+--------------------+
+|           4 | JKL012 |          4 |                60000 |              87164 |
+|           6 | PQR678 |          6 |                60000 |              97408 |
+|           7 | STU901 |          7 |                60000 |              61699 |
+|           8 | VWX234 |          8 |                60000 |              76274 |
+|           9 | YZA567 |          9 |                60000 |              76270 |
++-------------+--------+------------+----------------------+--------------------+
+~~~
+
+
+
+8. Crear un procedimiento almacenado para insertar una nueva orden de compra
+~~~mysql
+DELIMITER $$
+DROP PROCEDURE IF EXISTS insertar_orden_compra;
+CREATE PROCEDURE insertar_orden_compra(
+	IN p_fecha DATE,
+	IN p_proveedor_id INT,
+	IN p_empleado_id INT,
+	IN p_total DOUBLE
+)
+
+BEGIN
+    INSERT INTO orden_compra (fecha, proveedor_id, empleado_id, total)
+    VALUES (p_fecha, p_proveedor_id, p_empleado_id, p_total);
+END $$
+DELIMITER ;
+
+CALL insertar_orden_compra('2024-03-22', 4, 6, 30000);
+
+~~~
+
+
+9. Crear un procedimiento almacenado para actualizar los datos de un cliente
+~~~mysql
+DELIMITER $$
+DROP PROCEDURE IF EXISTS actualizar_cliente;
+CREATE PROCEDURE actualizar_cliente(
+    a_cliente_id INT,
+    a_documento VARCHAR(25),
+    a_nombre VARCHAR(25),
+    a_apellido VARCHAR(25),
+    a_direccion VARCHAR(50),
+    a_ciudad_id INT,
+    a_telefono_cliente_id INT
+)
+BEGIN
+	UPDATE cliente
+	SET documento = a_documento,
+	nombre = a_nombre,
+	apellido = a_apellido,
+	direccion = a_direccion,
+	ciudad_id = a_ciudad_id,
+	telefono_cliente_id = a_telefono_cliente_id	
+	WHERE cliente_id = a_cliente_id;
+END $$
+DELIMITER ;
+
+CALL actualizar_cliente(6, '1095841567', 'Laura', 'Jimenez', 'Carrera 26 98-42', 10, 6);
+
+~~~
+
+10. Crear un procedimiento almacenado para obtener los servicios más solicitados
+en un período
+~~~mysql
+DELIMITER $$
+DROP PROCEDURE IF EXISTS servicios_mas_solicitados;
+CREATE PROCEDURE servicios_mas_solicitados(
+	p_fecha_inicio DATE,
+	p_fecha_fin DATE
+)
+BEGIN
+	SELECT se.servicio_id, se.nombre AS 'Nombre servicio', COUNT(*) AS '# veces solicitado'
+	FROM reparaciones AS re
+	INNER JOIN servicio AS se
+	ON re.servicio_id = se.servicio_id
+	WHERE re.fecha BETWEEN p_fecha_inicio AND p_fecha_fin
+	GROUP BY se.servicio_id
+	ORDER BY COUNT(*) DESC
+	LIMIT 3;
+END $$
+DELIMITER ;
+
+CALL servicios_mas_solicitados('2023-02-22', '2023-11-08');
+
++-------------+------------------------------+--------------------+
+| servicio_id | Nombre servicio              | # veces solicitado |
++-------------+------------------------------+--------------------+
+|          10 | Revisión eléctrica           |                  3 |
+|           1 | Cambio de aceite             |                  2 |
+|           6 | Cambio de pastillas de freno |                  2 |
++-------------+------------------------------+--------------------+
+~~~
 

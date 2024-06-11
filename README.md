@@ -178,10 +178,8 @@ WHERE i.cantidad < i.stock_minimo;
 |            10 | Luz delantera      |       38 |           40 | Área de diagnóstico  |
 +---------------+--------------------+----------+--------------+----------------------+
 ~~~
-10. Obtener la lista de servicios más solicitados en un período específico, del 1 de mayo de 2023 al 4 de mayo del 2023.
-~~~mysql
 10. Obtener la lista de servicios más solicitados en un período específico, del 1 de mayo de 2023 al 20 de diciembre del 2023.
-
+~~~mysql
 SELECT s.nombre AS 'Nombre del servicio', COUNT(re.servicio_id) AS 'Cantidad de solicitudes'
 FROM reparaciones AS re
 INNER JOIN servicio AS s 

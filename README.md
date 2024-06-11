@@ -624,7 +624,7 @@ DELIMITER ;
 CALL eliminar_cita(2);
 ~~~
 
-De esta manera, elimando la cita con ID=2, la tabla citas queda de la siguiente forma, :
+De esta manera, eliminando la cita con ID=2, la tabla citas queda de la siguiente forma, :
 ~~~mysql
 +---------+---------------------+------------+-------------+-------------+
 | cita_id | fecha_hora          | cliente_id | vehiculo_id | servicio_id |

@@ -1,6 +1,6 @@
 # Proyecto_taller_automotriz
 
-Consultas requeridas
+CONSULTAS REQUERIDAS
 1. Obtener el historial de reparaciones de un vehículo específico, vehiculo ID=4
 
 ~~~mysql
@@ -417,3 +417,32 @@ ORDER BY e.empleado_id;
 |          10 | Sofia           | Garcia            |          10 | Revisión eléctrica           |                     1 |
 +-------------+-----------------+-------------------+-------------+------------------------------+-----------------------+
 ~~~
+
+SUBCONSULTAS
+
+1. Obtener el cliente que ha gastado más en reparaciones durante el último año.
+~~~mysql
+SELECT cl.nombre AS 'Nombre cliente', cl.apellido AS 'Apellido cliente', SUM(re.costo_total) AS 'Total costos reparaciones'
+FROM cliente AS cl
+INNER JOIN facturacion AS fa
+ON cl.cliente_id = fa.cliente_id
+INNER JOIN factura_detalle AS fd
+ON fa.factura_id = fd.factura_id 
+INNER JOIN reparaciones AS re
+ON fd.reparacion_id = re.reparacion_id
+WHERE fa.factura_id IN (SELECT fa1.factura_id
+FROM facturacion AS fa1 
+WHERE fa1.fecha BETWEEN '2023-05-05' AND '2024-05-05')
+GROUP BY cl.cliente_id
+ORDER BY SUM(re.costo_total) DESC
+LIMIT 1;
+
++----------------+------------------+---------------------------+
+| Nombre cliente | Apellido cliente | Total costos reparaciones |
++----------------+------------------+---------------------------+
+| Sofía          | Díaz             |                    124000 |
++----------------+------------------+---------------------------+
+~~~
+
+
+

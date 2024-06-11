@@ -42,7 +42,7 @@ INSERT INTO cliente (tipo_documento, documento, nombre, apellido, direccion, ciu
 ('CC', '567890123', 'Carlos', 'Hernández', 'Calle 789', 17, 7),
 ('NIT', '3456789012-3', 'Sofía', 'Díaz', 'Carrera 123', 8, 8),
 ('CC', '678901234', 'Andrés', 'Sánchez', 'Avenida 456', 18, 9),
-('CC', '789012345', 'Paola', 'Ramírez', 'Calle 789', 10, 10),
+('CC', '789012345', 'Paola', 'Ramírez', 'Calle 789', 10, 10);
 
 INSERT INTO marca (nombre) VALUES
 ('Toyota'),

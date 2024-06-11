@@ -108,7 +108,7 @@ WHERE f.cliente_id = 1 AND DATE(f.fecha) = '2023-05-01';
 +------------+------------+------------+----------------+---------------+
 ~~~
 
---- 7. Listar todas las órdenes de compra y sus detalles
+7. Listar todas las órdenes de compra y sus detalles
 ~~~mysql
 SELECT oc.orden_id, oc.fecha, oc.proveedor_id AS 'ID proveedor', od.pieza_id AS 'ID pieza', od.cantidad, od.precio_unitario, oc.total as 'Valor total'
 FROM orden_compra AS oc
@@ -549,8 +549,35 @@ BEGIN
 END $$
 DELIMITER ;
 
-CALL insertar_reparacion('2023-06-29', 8, 5, 6, 180000.00, 'Cambio periodico pastillas de freno', '01:18:00');
+CALL insertar_reparacion('2023-05-20', 1, 1, 1, 20000, 'Cambio de aceite', '00:30:00');
 ~~~
+Con esto, la tabla reparaciones queda de la siguiente manera:
+
+~~~mysql
+
++---------------+------------+-------------+-------------+-------------+-------------+-------------------------------------------+----------+
+| reparacion_id | fecha      | vehiculo_id | empleado_id | servicio_id | costo_total | descripcion                               | duracion |
++---------------+------------+-------------+-------------+-------------+-------------+-------------------------------------------+----------+
+|             1 | 2023-05-01 |           1 |           1 |           1 |       44000 | Cambio de aceite y filtro                 | 01:00:00 |
+|             2 | 2023-05-02 |           2 |           2 |           2 |       68000 | Alineación de las ruedas                  | 02:00:00 |
+|             3 | 2023-05-03 |           3 |           3 |           3 |       52000 | Balanceo de las ruedas                    | 01:30:00 |
+|             4 | 2023-05-04 |           4 |           4 |           4 |       60000 | Revisión y ajuste de frenos               | 01:45:00 |
+|             5 | 2023-05-05 |           5 |           5 |           5 |       76000 | Revisión y ajuste de suspensión           | 02:30:00 |
+|             6 | 2023-05-06 |           6 |           6 |           6 |      100000 | Cambio de pastillas de freno              | 02:15:00 |
+|             7 | 2023-05-07 |           7 |           7 |           7 |       36000 | Cambio de bujías del motor                | 01:15:00 |
+|             8 | 2023-05-08 |           8 |           8 |           8 |      124000 | Revisión completa del motor               | 03:00:00 |
+|             9 | 2023-05-09 |           9 |           9 |           9 |       28000 | Cambio de filtro de aire del motor        | 00:45:00 |
+|            10 | 2023-05-10 |          10 |          10 |          10 |       84000 | Revisión y ajuste del sistema eléctrico   | 02:45:00 |
+|            11 | 2023-08-18 |           2 |           3 |           6 |      100000 | Cambio periodico pastillas de freno       | 01:30:00 |
+|            12 | 2024-01-08 |           4 |           8 |           7 |       85000 | cambio mantenimiento bujías               | 01:30:00 |
+|            13 | 2023-07-25 |           6 |           9 |          10 |      130000 | Mantenimiento periodico sistema electrico | 01:30:00 |
+|            14 | 2023-12-02 |           9 |           5 |          10 |       56000 | Revisión sistema eléctrico                | 01:15:00 |
+|            15 | 2023-08-18 |           7 |           4 |           5 |       89000 | Revisión suspensión                       | 01:15:00 |
+|            16 | 2023-09-09 |           8 |           9 |          10 |      110000 | Revisión sistema eléctrico                | 02:25:00 |
+|            17 | 2023-05-20 |           1 |           1 |           1 |       20000 | Cambio de aceite                          | 00:30:00 |
++---------------+------------+-------------+-------------+-------------+-------------+-------------------------------------------+----------+
+~~~
+
 2. Crear un procedimiento almacenado para actualizar el inventario de una pieza.
 
 ~~~mysql
@@ -571,6 +598,17 @@ DELIMITER ;
 CALL actualizar_inventario(2, 80);
 ~~~
 
+Con esto, la pieza con ID 2 en la tabla inventario queda de la siguiente manera:
+
+~~~mysql
++---------------+----------+----------+--------------+--------------+---------------+
+| inventario_id | pieza_id | cantidad | ubicacion_id | stock_minimo | stock_inicial |
++---------------+----------+----------+--------------+--------------+---------------+
+|             2 |        2 |       80 |            1 |           30 |            95 |
++---------------+----------+----------+--------------+--------------+---------------+
+~~~
+
+
 3. Crear un procedimiento almacenado para eliminar una cita
 ~~~mysql
 
@@ -586,6 +624,24 @@ END $$
 DELIMITER ;
 
 CALL eliminar_cita(2);
+~~~
+
+De esta manera, elimando la cita con ID=2, la tabla citas queda de la siguiente forma, :
+~~~mysql
++---------+---------------------+------------+-------------+-------------+
+| cita_id | fecha_hora          | cliente_id | vehiculo_id | servicio_id |
++---------+---------------------+------------+-------------+-------------+
+|       1 | 2024-06-01 09:00:00 |          1 |           1 |           1 |
+|       3 | 2024-06-03 11:00:00 |          3 |           3 |           3 |
+|       4 | 2024-06-04 12:00:00 |          4 |           4 |           4 |
+|       5 | 2024-06-05 13:00:00 |          5 |           5 |           5 |
+|       6 | 2024-06-06 14:00:00 |          6 |           6 |           6 |
+|       7 | 2024-06-07 15:00:00 |          7 |           7 |           7 |
+|       8 | 2024-06-08 16:00:00 |          8 |           8 |           8 |
+|       9 | 2024-06-09 17:00:00 |          9 |           9 |           9 |
+|      10 | 2024-06-10 18:00:00 |         10 |          10 |          10 |
+|      11 | 2024-06-10 10:00:00 |          2 |           2 |           6 |
++---------+---------------------+------------+-------------+-------------+
 ~~~
 
 4. Crear un procedimiento almacenado para generar una factura
@@ -604,6 +660,25 @@ END $$
 DELIMITER ;
 
 CALL generar_factura('2024-03-15', 5, 220000);
+~~~
+
+Aquí podemos observar que la nueva factura quedó registrada con ID=11:
+~~~mysql
++------------+------------+------------+--------+
+| factura_id | fecha      | cliente_id | total  |
++------------+------------+------------+--------+
+|          1 | 2023-05-01 |          1 |  55000 |
+|          2 | 2023-05-02 |          2 |  85000 |
+|          3 | 2023-05-03 |          3 |  65000 |
+|          4 | 2023-05-04 |          4 |  75000 |
+|          5 | 2023-05-05 |          5 |  95000 |
+|          6 | 2023-05-06 |          6 | 125000 |
+|          7 | 2023-05-07 |          7 |  45000 |
+|          8 | 2023-05-08 |          8 | 155000 |
+|          9 | 2023-05-09 |          9 |  35000 |
+|         10 | 2023-05-10 |         10 | 105000 |
+|         11 | 2024-03-15 |          5 | 220000 |
++------------+------------+------------+--------+
 ~~~
 
 5. Crear un procedimiento almacenado para obtener el historial de reparaciones
@@ -631,8 +706,7 @@ CALL historial_reparaciones(4);
 +-------------+---------------+------------+-----------------------------+-------------+
 ~~~
 
-6. Crear un procedimiento almacenado para calcular el costo total de
-reparaciones de un cliente en un período
+6. Crear un procedimiento almacenado para calcular el costo total de reparaciones de un cliente en un período
 ~~~mysql
 
 
@@ -665,8 +739,7 @@ CALL costo_reparaciones_por_cliente(5, '2023-01-10','2023-11-10');
 +------------+----------------+------------------+--------------------------+
 ~~~
 
-7. Crear un procedimiento almacenado para obtener la lista de vehículos que
-requieren mantenimiento basado en el kilometraje.
+7. Crear un procedimiento almacenado para obtener la lista de vehículos que requieren mantenimiento basado en el kilometraje.
 ~~~mysql
 DELIMITER $$
 DROP PROCEDURE IF EXISTS mantenimiento_por_kilometraje;
@@ -714,9 +787,27 @@ END $$
 DELIMITER ;
 
 CALL insertar_orden_compra('2024-03-22', 4, 6, 30000);
-
 ~~~
+Aquí podemos observar que la nueva orden de compra quedó registrada con ID=11:
 
+~~~mysql
+
++----------+------------+--------------+-------------+---------+
+| orden_id | fecha      | proveedor_id | empleado_id | total   |
++----------+------------+--------------+-------------+---------+
+|        1 | 2024-06-01 |            1 |           1 |  500000 |
+|        2 | 2024-06-02 |            2 |           2 |  700000 |
+|        3 | 2024-06-03 |            3 |           3 |  600000 |
+|        4 | 2024-06-04 |            4 |           4 |  800000 |
+|        5 | 2024-06-05 |            5 |           5 |  900000 |
+|        6 | 2024-06-06 |            6 |           6 | 1200000 |
+|        7 | 2024-06-07 |            7 |           7 |  400000 |
+|        8 | 2024-06-08 |            8 |           8 | 1300000 |
+|        9 | 2024-06-09 |            9 |           9 |  300000 |
+|       10 | 2024-06-10 |           10 |          10 | 1100000 |
+|       11 | 2024-03-22 |            4 |           6 |   30000 |
++----------+------------+--------------+-------------+---------+
+~~~
 
 9. Crear un procedimiento almacenado para actualizar los datos de un cliente
 ~~~mysql
@@ -744,11 +835,20 @@ END $$
 DELIMITER ;
 
 CALL actualizar_cliente(6, '1095841567', 'Laura', 'Jimenez', 'Carrera 26 98-42', 10, 6);
-
 ~~~
 
-10. Crear un procedimiento almacenado para obtener los servicios más solicitados
-en un período
+Llamando el procedimiento mencionado, los datos del cliente con ID=6 quedan de la siguiente forma:
+~~~mysql
++------------+----------------+------------+--------+----------+------------------+-----------+---------------------+
+| cliente_id | tipo_documento | documento  | nombre | apellido | direccion        | ciudad_id | telefono_cliente_id |
++------------+----------------+------------+--------+----------+------------------+-----------+---------------------+
+|          6 | CC             | 1095841567 | Laura  | Jimenez  | Carrera 26 98-42 |        10 |                   6 |
++------------+----------------+------------+--------+----------+------------------+-----------+---------------------+
+~~~
+
+
+
+10. Crear un procedimiento almacenado para obtener los servicios más solicitados en un período
 ~~~mysql
 DELIMITER $$
 DROP PROCEDURE IF EXISTS servicios_mas_solicitados;
